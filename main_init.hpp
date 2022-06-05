@@ -41,6 +41,36 @@ namespace LogicSim {
         LogicSimException(const string& what) : runtime_error(what) {};
         
     };
+    enum class WireStateValueType {
+        NONE,
+        BIT,
+        BYTE,
+        WORD,
+        DWORD,
+        QWORD,
+        FLOAT,
+        OBJ
+    };
+    string wirestatetype_to_str(WireStateValueType t) {
+        switch (t) {
+        case WireStateValueType::NONE:
+            return "NONE";
+        case WireStateValueType::BIT:
+            return "BIT";
+        case WireStateValueType::BYTE:
+            return "BYTE";
+        case WireStateValueType::WORD:
+            return "WORD";
+        case WireStateValueType::DWORD:
+            return "DWORD";
+        case WireStateValueType::QWORD:
+            return "QWORD";
+        case WireStateValueType::FLOAT:
+            return "FLOAT";
+        case WireStateValueType::OBJ:
+            return "OBJECT";
+        }
+    };
     namespace Exceptions {
         class ShortCircuitError;
         class InvalidKeyError : public LogicSimException {
@@ -57,6 +87,12 @@ namespace LogicSim {
                 + obj->getObjectType() + ":" + to_string(obj)
                 + " in " + root->getObjectType() + ":" + to_string(root)) {};
         };
+        class UnexpectedWireValueTypeError : public LogicSimException {
+        public:
+            InvalidWireValueTypeError(LogicSimObject* obj, WireStateValueType expected, WireStateValueType actual) :
+                LogicSimException("Invalid WireValueType: " + wirestatetype_to_str(expected)
+                + " expected, but got " + wirestatetype_to_str(actual) + " at "
+                + obj->getObjectType() + ":" + to_string(obj)) {};    
     };
 
     inline void memcpy(void* src, void* pst, size_t n) {
@@ -135,7 +171,7 @@ namespace LogicSim {
     class SubCircuit;   // to define
     class Pin;        
     class MainSim;     // to define
-
+    
     class WireStateValue final : public LogicSimObject {
     public:
         virtual const char* getObjectType() {
@@ -144,27 +180,29 @@ namespace LogicSim {
         unsigned short resistance = 0;
         union {
             void* ptr;
+            long double fp;
             unsigned long long ll = 0;
             unsigned long l;
             unsigned short s;
             unsigned char byte;
             bool b;
         };
-        const char* type = "<null>";
+        WireStateValueType type = NONE;
         WireStateValue() : resistance(-1) {};
         WireStateValue(std::nullptr_t) : resistance(-1) {};
-        WireStateValue(unsigned char byte) : byte(byte), type("by") {};
-        WireStateValue(unsigned short v) : s(v), type("s") {};
-        WireStateValue(unsigned long v) : l(v), type("l") {};
-        WireStateValue(unsigned long long v) : ll(v), type("ll") {};
-        WireStateValue(bool v) : b(v), type("b") {};
-        WireStateValue(void* v) : ptr(v), type("ptr") {};
+        WireStateValue(unsigned char byte) : byte(byte), type(WireStateValueType::BYTE) {};
+        WireStateValue(unsigned short v) : s(v), type(WireStateValueType::WORD) {};
+        WireStateValue(unsigned long v) : l(v), type(WireStateValueType::DWORD) {};
+        WireStateValue(unsigned long long v) : ll(v), type(WireStateValueType::QWORD) {};
+        WireStateValue(bool v) : b(v), type(WireStateValueType::BIT) {};
+        WireStateValue(void* v) : ptr(v), type(WireStateValueType::OBJ) {};
+        WireStateValue(long double v) : fp(v), type(WireStateValueType::FLOAT) {};
         WireStateValue(const WireStateValue& other) {
             type = other.type;
             ll = other.ll; //capture all bytes
         }
         ~WireStateValue() {
-            if (type == "ptr") {
+            if (type == WireStateValueType::OBJ) {
                 free(ptr);
             }
         }
@@ -187,7 +225,33 @@ namespace LogicSim {
         if (v->isNone()) {
             return "None";
         }
-        return (string)"WireStateValue(" + (string)v->type + ":" + to_string(v->ll) + ")";
+        string s = "WireStateValue(" + wirestatetype_to_str(v->type) + ":";
+        switch (v->type) {
+            case WireStateValueType::NONE:
+            case WireStateValueType::BYTE:
+                s += to_string(v->byte);
+                break;
+            case WireStateValueType::WORD:
+                s += to_string(v->s);
+                break;
+            case WireStateValueType::DWORD:
+                s += to_string(v->l);
+                break;
+            case WireStateValueType::QWORD:
+                s += to_string(v->ll);
+                break;
+            case WireStateValueType::FLOAT:
+                s += to_string(v->fp);
+                break;
+            case WireStateValueType::OBJ:
+                s += to_string(v->ptr);
+                break;
+            case WireStateValueType::BIT:
+                s += to_string((int)v->b);
+                break;
+        }
+        s += ")";
+        return s;
     }
     namespace Exceptions {
         class ShortCircuitError : public LogicSimException {
