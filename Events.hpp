@@ -34,19 +34,25 @@ namespace Event_Namespace__ {
         Event& operator=(const Event&) = delete;
 
         EventCaller<Args...> createCaller();
-        std::shared_ptr<EventHandler<Args...>> Connect(void (*)(Args...));
+        std::shared_ptr<EventHandler<Args...>> Connect(void (*)(void*, Args...), void*);
         std::tuple<Args...> Wait();
     };
     template <typename... Args>
     class EventHandler final {
         Event<Args...>* event;
         bool isDisconnected = false;
-        void (*function)(Args...);
+        void* instance;
+        void (*function)(void*,Args...);
         template <typename... Args>
         friend class Event;
-        EventHandler(Event<Args...>* e, void (*f)(Args...)) : event(e), function(f) {};
+        EventHandler(Event<Args...>* e, void (*f)(void*,Args...), void* instance) : event(e), function(f), instance(instance) {};
         ~EventHandler() {};
     public:
+        EventHandler() {
+            isDisconnected = true;
+        }
+        EventHandler(const EventHandler&) = delete;
+        EventHandler& operator=(const EventHandler&) = delete;
         void Disconnect() {
             if (!isDisconnected) {
                 isDisconnected = true;
@@ -70,12 +76,12 @@ namespace Event_Namespace__ {
     void Event<Args...>::InternalCall(Args... args) {
         ArgumentedAwaitable.notify_all(args...);
         for (auto& handle : handles) {
-            std::thread(handle->function, args...).detach();
+            std::thread(handle->function, handle->instance, args...).detach();
         }
     }
     template <typename... Args>
-    std::shared_ptr<EventHandler<Args...>> Event<Args...>::Connect(void (*f)(Args...)) {
-        auto handle = std::make_shared<Event_Handler<Args...>>(this, f);
+    std::shared_ptr<EventHandler<Args...>> Event<Args...>::Connect(void (*f)(void*,Args...), void* instance) {
+        auto handle = std::make_shared<Event_Handler<Args...>>(this, f, instance);
         handles.push_back(handle);
         return handle;
     }
