@@ -9,6 +9,7 @@
 #include "Awaitable.hpp"
 #include "to_string.hpp"
 #include "Thread.hpp"
+#include "Events.hpp"
 
 namespace LogicSim {
     using std::vector;
@@ -98,17 +99,12 @@ namespace LogicSim {
     template<typename K, typename V>
     class Table : public LogicSimObject {
     private:
-        unordered_map<K, V*> entries;
+        unordered_map<K, unique_ptr<V>> entries;
     public:
         virtual const char* getObjectType() {
             return "Table";
         }
-        Table() {}
-        ~Table() {
-            for (auto& entry : entries) {
-                delete entry.second;
-            }
-        }
+        Table() = default;
         V& operator[](const K& key) {
             auto v = entries.find(key);
             if (v == entries.end()) {
@@ -136,8 +132,9 @@ namespace LogicSim {
     class BasicGate;
     class Wire;
     class WireState;
-    class SubCircuit;
-    class Pin;
+    class SubCircuit;   // to define
+    class Pin;        
+    class MainSim;     // to define
 
     class WireStateValue final : public LogicSimObject {
     public:
@@ -155,6 +152,7 @@ namespace LogicSim {
         };
         const char* type = "<null>";
         WireStateValue() : resistance(-1) {};
+        WireStateValue(std::nullptr_t) : resistance(-1) {};
         WireStateValue(unsigned char byte) : byte(byte), type("by") {};
         WireStateValue(unsigned short v) : s(v), type("s") {};
         WireStateValue(unsigned long v) : l(v), type("l") {};
@@ -195,13 +193,13 @@ namespace LogicSim {
         class ShortCircuitError : public LogicSimException {
         public:
             ShortCircuitError(WireStateValue* a,WireStateValue* b, LogicSimObject* obj) : LogicSimException(
-                "short circuit conflict between two wire state values " + to_string(a) 
-                + "," + to_string(b) + " at object " + obj->getObjectType() + ":" + to_string(obj)
+                "short circuit conflict between two wire state values " + to_string_v(a) 
+                + "," + to_string_v(b) + " at object " + obj->getObjectType() + ":" + to_string(obj)
                 ) {};
         };
     }
 
-    class WireState : public LogicSimObject {
+    class WireState final : public LogicSimObject {
     private:
         std::vector<WireStateValue> values;
         Wire* root;
@@ -309,23 +307,155 @@ namespace LogicSim {
             overridevalue = v;
         }
     };
-    
-    class Pin  : public LogicSimObject {
-        int pin_num;
+    enum class PinMark {
+        INPUT,
+        OUTPUT,
+        BIDIRECTIONAL
+    };
+    class Pin final : public LogicSimObject {
+        unsigned short pin_num;
         string name;
+        Wire* wire = nullptr;
+        WireStateValue state = WireStateValue();
+        PinMark mark = PinMark::BIDIRECTIONAL;
+        BasicGate* root = nullptr;
     public:
         virtual const char* getObjectType() {
             return "Pin";
         }
+        Pin(BasicGate* gate, unsigned short pin_num, string name) 
+            : root(gate), pin_num(pin_num), name(name) {};
+        Pin(BasicGate* gate, unsigned short pin_num) 
+            : root(gate), pin_num(pin_num), name(to_string(pin_num)) {};
+        Pin(BasicGate* gate, unsigned short pin_num, PinMark mark) 
+            : root(gate), pin_num(pin_num), mark(mark), name(to_string(pin_num)) {};
+        Pin(BasicGate* gate, unsigned short pin_num, string name, PinMark mark) 
+            : root(gate), pin_num(pin_num), name(name), mark(mark) {};
+        ~Pin();
+        unsigned short getPinNum() {
+            return pin_num;
+        }
+        string getName() {
+            return name;
+        }
+        PinMark getMark() {
+            return mark;
+        }
+        void setMark(PinMark mark) {
+            this->mark = mark;
+        }
+        bool operator == (const Pin& other) {
+            return this == &other;
+        }
+        bool operator != (const Pin& other) {
+            return this != &other;
+        }
+        bool operator == (unsigned short other) {
+            return this->pin_num == other;
+        }
+        bool operator != (unsigned short other) {
+            return this->pin_num != other;
+        }
+        BasicGate* getRoot() {
+            return root;
+        }
+        void setWire(Wire* wire);
+        void write(WireStateValue value);
+        WireStateValue read();
+        
     };
-    class BasicGate {
+    
+    class BasicGate : public LogicSimObject {
+    private:
+        bool marked_forUpdate = false;
+        void await_for_update();
+        friend class Wire;
+        void markForUpdate() {
+            if (!marked_forUpdate) {
+                marked_forUpdate = true;
+                await_for_update();
+            }
+        }
+    protected:
         vector<Pin> pins;
+        virtual void update() = 0;
+        friend class MainSim;
     public:
-        ConfigTable config;
-        BasicGate() {};
+        const bool is_configurable = false;
+        virtual const char* getObjectType() {
+            return "BasicGate";
+        }
+        BasicGate() = default;
+        BasicGate(unsigned short num_pins) {
+            for (int i = 0; i < num_pins; i++) {
+                pins.push_back(Pin(this,i + 1));
+            }
+        }
+        BasicGate(unsigned short input_pins, unsigned short output_pins) {
+            for (int i = 0; i < input_pins; i++) {
+                pins.push_back(Pin(this, i + 1, PinMark::INPUT));
+            }
+            for (int i = 0; i < output_pins; i++) {
+                pins.push_back(Pin(this, i + output_pins + 1, PinMark::OUTPUT));
+            }
+        }
+        BasicGate(unsigned short input_pins, unsigned short output_pins, unsigned short bidirectional_pins) {
+            for (int i = 0; i < input_pins; i++) {
+                pins.push_back(Pin(this, i + 1, PinMark::INPUT));
+            }
+            for (int i = 0; i < output_pins; i++) {
+                pins.push_back(Pin(this, i + output_pins + 1, PinMark::OUTPUT));
+            }
+            for (int i = 0; i < bidirectional_pins; i++) {
+                pins.push_back(Pin(this, i + output_pins + input_pins + 1, PinMark::BIDIRECTIONAL));
+            }
+        }
+
     };
-    class Wire;
-    class SubCircuit;
-    void connect(Pin*,Wire*);
-    void disconnect(Pin*, Wire*);
+    class ConfigurableBasicGate : public BasicGate {
+    public:
+        const bool is_configurable = true;
+        ConfigTable config_table;
+        virtual const char* getObjectType() {
+            return "ConfigurableBasicGate";
+        }
+        ConfigurableBasicGate() = default;
+        ConfigurableBasicGate(unsigned short num_pins) : BasicGate(num_pins) {};
+        ConfigurableBasicGate(unsigned short input_pins, unsigned short output_pins) : BasicGate(input_pins, output_pins) {};
+        ConfigurableBasicGate(unsigned short input_pins, unsigned short output_pins, unsigned short bidirectional_pins) : BasicGate(input_pins, output_pins, bidirectional_pins) {};
+    };
+    
+    class Wire final : public LogicSimObject {
+        WireState state;
+        friend class Pin;
+        friend void connect(Pin*,Wire*);
+        friend void disconnect(Pin*,Wire*);
+        vector<Pin*> pins;
+    public:
+        virtual const char* getObjectType() {
+            return "Wire";
+        }
+        Wire() = default;
+        ~Wire() {
+            for (auto pin : pins) {
+                pin->setWire(nullptr);
+            }
+        };
+        WireStateValue getState() {
+            return state.getState();
+        }
+        void mark_for_update() {
+            for (auto pin : pins) {
+                if (pin->getMark() != PinMark::OUTPUT) pin->getRoot()->markForUpdate();
+            }
+        }
+    };
+    void connect(Pin* p,Wire* w) {
+        p->setWire(w);
+        w->pins.push_back(p);
+    };
+    void disconnect(Pin* p, Wire* w) {
+        p->setWire(nullptr);
+        w->pins.erase(remove(w->pins.begin(), w->pins.end(), p), w->pins.end());
+    };
 };
