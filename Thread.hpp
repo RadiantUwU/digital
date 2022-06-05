@@ -30,5 +30,8 @@ public:
         detach();
         native_thread = new std::thread(func);
     }
-
+    Thread(std::thread* thr) {
+        native_thread = thr;
+    }
+    Thread() {}
 };
