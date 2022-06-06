@@ -123,12 +123,12 @@ namespace LogicSim {
             return *(T*)ptr.get_t();
         }
         template<typename T>
-        void set(T obj) {
+        void set_t(T obj) {
             T* new_obj = malloc(sizeof(T));
             memcpy(new_obj,&obj,sizeof(T));
             ptr.reset(new_obj);
         }
-        void set<nullptr_t>(nullptr_t) {
+        void set_t<nullptr_t>(nullptr_t) {
             ptr.reset(nullptr);
         }
         ConfigEntry(nullptr_t) {

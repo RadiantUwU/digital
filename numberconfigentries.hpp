@@ -12,7 +12,9 @@ namespace LogicSim {
         unsigned short get() {
             return this->get_t<unsigned short>();
         };
-        
+        void set(unsigned short value) {
+            this->set_t<unsigned short>(value);
+        };
     };
     class UByteConfigEntry : public ConfigEntry {
     public:
@@ -22,6 +24,9 @@ namespace LogicSim {
         };
         unsigned char get() {
             return this->get_t<unsigned char>();
+        };
+        void set(unsigned char value) {
+            this->set_t<unsigned char>(value);
         };
     };
     class ULongConfigEntry : public ConfigEntry {
@@ -33,6 +38,9 @@ namespace LogicSim {
         unsigned long get() {
             return this->get_t<unsigned long>();
         };
+        void set(unsigned long value) {
+            this->set_t<unsigned long>(value);
+        };
     };
     class ULongLongConfigEntry : public ConfigEntry {
     public:
@@ -42,6 +50,9 @@ namespace LogicSim {
         };
         unsigned long long get() {
             return this->get_t<unsigned long long>();
+        };
+        void set(unsigned long long value) {
+            this->set_t<unsigned long long>(value);
         };
     };
     class ShortConfigEntry : public ConfigEntry {
@@ -53,6 +64,9 @@ namespace LogicSim {
         signed short get() {
             return this->get_t<short>();
         };
+        void set(signed short value) {
+            this->set_t<short>(value);
+        };
     };
     class ByteConfigEntry : public ConfigEntry {
     public:
@@ -62,6 +76,9 @@ namespace LogicSim {
         };
         signed char get() {
             return this->get_t<signed char>();
+        };
+        void set(signed char value) {
+            this->set_t<signed char>(value);
         };
     };
     class LongConfigEntry : public ConfigEntry {
@@ -73,6 +90,9 @@ namespace LogicSim {
         signed long get() {
             return this->get_t<signed long>();
         };
+        void set(signed long value) {
+            this->set_t<signed long>(value);
+        };
     };
     class LongLongConfigEntry : public ConfigEntry {
     public:
@@ -83,6 +103,9 @@ namespace LogicSim {
         signed long long get() {
             return this->get_t<signed long long>();
         };
+        void set(signed long long value) {
+            this->set_t<signed long long>(value);
+        };
     };
     class FloatConfigEntry : public ConfigEntry {
     public:
@@ -92,6 +115,9 @@ namespace LogicSim {
         };
         long double get() {
             return this->get_t<long double>();
+        };
+        void set(long double value) {
+            this->set_t<long double>(value);
         };
     };  
 
