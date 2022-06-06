@@ -174,6 +174,21 @@ namespace LogicSim {
         bool exists(const K& key) {
             return entries.find(key) != entries.end();
         }
+        void insert(const K& key, unique_ptr<V> value) {
+            entries[key] = std::move(value);
+        }
+        void erase(const K& key) {
+            entries.erase(key);
+        }
+        void clear() {
+            entries.clear();
+        }
+        auto find(const K& key) {
+            return entries.find(key);
+        }
+        size_t size() {
+            return entries.size();
+        }
         string toString() {
             string ret = "{";
             for (auto& v : entries) {
