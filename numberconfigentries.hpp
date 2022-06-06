@@ -15,6 +15,9 @@ namespace LogicSim {
         void set(unsigned short value) {
             this->set_t<unsigned short>(value);
         };
+        virtual const char* getObjectType() override {
+            return "UShortConfigEntry";
+        };
     };
     class UByteConfigEntry : public ConfigEntry {
     public:
@@ -27,6 +30,9 @@ namespace LogicSim {
         };
         void set(unsigned char value) {
             this->set_t<unsigned char>(value);
+        };
+        virtual const char* getObjectType() override {
+            return "UByteConfigEntry";
         };
     };
     class ULongConfigEntry : public ConfigEntry {
@@ -41,6 +47,9 @@ namespace LogicSim {
         void set(unsigned long value) {
             this->set_t<unsigned long>(value);
         };
+        virtual const char* getObjectType() override {
+            return "ULongConfigEntry";
+        };
     };
     class ULongLongConfigEntry : public ConfigEntry {
     public:
@@ -53,6 +62,9 @@ namespace LogicSim {
         };
         void set(unsigned long long value) {
             this->set_t<unsigned long long>(value);
+        };
+        virtual const char* getObjectType() override {
+            return "ULongLongConfigEntry";
         };
     };
     class ShortConfigEntry : public ConfigEntry {
@@ -67,6 +79,9 @@ namespace LogicSim {
         void set(signed short value) {
             this->set_t<short>(value);
         };
+        virtual const char* getObjectType() override {
+            return "ShortConfigEntry";
+        };
     };
     class ByteConfigEntry : public ConfigEntry {
     public:
@@ -79,6 +94,9 @@ namespace LogicSim {
         };
         void set(signed char value) {
             this->set_t<signed char>(value);
+        };
+        virtual const char* getObjectType() override {
+            return "ByteConfigEntry";
         };
     };
     class LongConfigEntry : public ConfigEntry {
@@ -93,6 +111,9 @@ namespace LogicSim {
         void set(signed long value) {
             this->set_t<signed long>(value);
         };
+        virtual const char* getObjectType() override {
+            return "LongConfigEntry";
+        };
     };
     class LongLongConfigEntry : public ConfigEntry {
     public:
@@ -106,6 +127,9 @@ namespace LogicSim {
         void set(signed long long value) {
             this->set_t<signed long long>(value);
         };
+        virtual const char* getObjectType() override {
+            return "LongLongConfigEntry";
+        };
     };
     class FloatConfigEntry : public ConfigEntry {
     public:
@@ -118,6 +142,9 @@ namespace LogicSim {
         };
         void set(long double value) {
             this->set_t<long double>(value);
+        };
+        virtual const char* getObjectType() override {
+            return "FloatConfigEntry";
         };
     };  
 

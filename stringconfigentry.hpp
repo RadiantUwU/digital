@@ -8,6 +8,9 @@ namespace LogicSim {
         StringConfigEntry(string value) : ConfigEntry(value,"string") {
             this->set_t<string>("");
         };
+        virtual const char* getObjectType() override {
+            return "StringConfigEntry";
+        };
         virtual string toString() override {
             return this->get_t<string>();
         };
