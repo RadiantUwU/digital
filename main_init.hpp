@@ -174,6 +174,14 @@ namespace LogicSim {
         bool exists(const K& key) {
             return entries.find(key) != entries.end();
         }
+        string toString() {
+            string ret = "{";
+            for (auto& v : entries) {
+                ret += to_string(v.first) + ":" + to_string(v.second) + ",";
+            }
+            ret += "}";
+            return ret;
+        }
     };
     class ConfigTable final : public Table<string, ConfigEntry> {
     public:
