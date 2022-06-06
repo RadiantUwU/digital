@@ -7,57 +7,92 @@ namespace LogicSim {
     public:
         UShortConfigEntry(unsigned short value) : ConfigEntry(value,"ushort") {};
         virtual string toString() override {
-            return std::to_string(this->get<unsigned short>());
+            return std::to_string(this->get_t<unsigned short>());
         };
+        unsigned short get() {
+            return this->get_t<unsigned short>();
+        };
+        
     };
     class UByteConfigEntry : public ConfigEntry {
     public:
         UByteConfigEntry(unsigned char value) : ConfigEntry(value,"ubyte") {};
         virtual string toString() override {
-            return std::to_string(this->get<unsigned char>());
+            return std::to_string(this->get_t<unsigned char>());
+        };
+        unsigned char get() {
+            return this->get_t<unsigned char>();
         };
     };
     class ULongConfigEntry : public ConfigEntry {
     public:
         ULongConfigEntry(unsigned long value) : ConfigEntry(value,"ulong") {};
         virtual string toString() override {
-            return std::to_string(this->get<unsigned long>());
+            return std::to_string(this->get_t<unsigned long>());
+        };
+        unsigned long get() {
+            return this->get_t<unsigned long>();
         };
     };
     class ULongLongConfigEntry : public ConfigEntry {
     public:
         ULongLongConfigEntry(unsigned long long value) : ConfigEntry(value,"ulonglong") {};
         virtual string toString() override {
-            return std::to_string(this->get<unsigned long long>());
+            return std::to_string(this->get_t<unsigned long long>());
+        };
+        unsigned long long get() {
+            return this->get_t<unsigned long long>();
         };
     };
     class ShortConfigEntry : public ConfigEntry {
     public:
-        ShortConfigEntry(short value) : ConfigEntry(value,"short") {};
+        ShortConfigEntry(signed short value) : ConfigEntry(value,"short") {};
         virtual string toString() override {
-            return std::to_string(this->get<short>());
+            return std::to_string(this->get_t<signed short>());
+        };
+        signed short get() {
+            return this->get_t<short>();
         };
     };
     class ByteConfigEntry : public ConfigEntry {
     public:
-        ByteConfigEntry(char value) : ConfigEntry(value,"byte") {};
+        ByteConfigEntry(signed char value) : ConfigEntry(value,"byte") {};
         virtual string toString() override {
-            return std::to_string(this->get<char>());
+            return std::to_string(this->get_t<signed char>());
+        };
+        signed char get() {
+            return this->get_t<signed char>();
         };
     };
     class LongConfigEntry : public ConfigEntry {
     public:
-        LongConfigEntry(long value) : ConfigEntry(value,"long") {};
+        LongConfigEntry(signed long value) : ConfigEntry(value,"long") {};
         virtual string toString() override {
-            return std::to_string(this->get<long>());
+            return std::to_string(this->get_t<signed long>());
+        };
+        signed long get() {
+            return this->get_t<signed long>();
         };
     };
     class LongLongConfigEntry : public ConfigEntry {
     public:
-        LongLongConfigEntry(long long value) : ConfigEntry(value,"longlong") {};
+        LongLongConfigEntry(signed long long value) : ConfigEntry(value,"longlong") {};
         virtual string toString() override {
-            return std::to_string(this->get<long long>());
+            return std::to_string(this->get_t<signed long long>());
+        };
+        signed long long get() {
+            return this->get_t<signed long long>();
         };
     };
+    class FloatConfigEntry : public ConfigEntry {
+    public:
+        FloatConfigEntry(long double value) : ConfigEntry(value,"float") {};
+        virtual string toString() override {
+            return std::to_string(this->get_t<long double>());
+        };
+        long double get() {
+            return this->get_t<long double>();
+        };
+    };  
 
 }

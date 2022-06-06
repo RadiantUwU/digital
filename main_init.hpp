@@ -119,8 +119,8 @@ namespace LogicSim {
             ptr.reset(new_obj);
         }
         template<typename T>
-        T& get() {
-            return *(T*)ptr.get();
+        T& get_t() {
+            return *(T*)ptr.get_t();
         }
         template<typename T>
         void set(T obj) {
