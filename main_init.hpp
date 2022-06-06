@@ -423,6 +423,7 @@ namespace LogicSim {
         WireStateValue state = WireStateValue();
         PinMark mark = PinMark::BIDIRECTIONAL;
         BasicGate* root = nullptr;
+        friend class BasicGate;
     public:
         virtual const char* getObjectType() {
             return "Pin";
@@ -463,6 +464,9 @@ namespace LogicSim {
         BasicGate* getRoot() {
             return root;
         }
+        bool hasWire() {
+            return wire != nullptr;
+        }
         void setWire(Wire* wire);
         void write(int in,WireStateValue value);
         vector<WireState> read();
@@ -482,8 +486,17 @@ namespace LogicSim {
         }
     protected:
         vector<Pin> pins;
+        vector<Pin*> input_pins;
+        vector<Pin*> output_pins;
         virtual void update() = 0;
+        virtual void init() {};
         friend class MainSim;
+        bool pin_has_wire(unsigned short pin_num) {
+            return pins[pin_num].hasWire();
+        }
+        unsigned short get_pin_bits(unsigned short pin_num);
+        void set_pin_bits(unsigned short pin_num, unsigned short bits);
+
     public:
         virtual bool isConfigurable() {return false;}
         virtual const char* getObjectType() {
@@ -493,30 +506,50 @@ namespace LogicSim {
         BasicGate(unsigned short num_pins) {
             for (int i = 0; i < num_pins; i++) {
                 pins.push_back(Pin(this,i + 1));
+                input_pins.push_back(&pins[i]);
+                output_pins.push_back(&pins[i]);
             }
         }
         BasicGate(unsigned short input_pins, unsigned short output_pins) {
             for (int i = 0; i < input_pins; i++) {
                 pins.push_back(Pin(this, i + 1, PinMark::INPUT));
+                this->input_pins.push_back(&pins[i]);
             }
             for (int i = 0; i < output_pins; i++) {
                 pins.push_back(Pin(this, i + output_pins + 1, PinMark::OUTPUT));
+                this->output_pins.push_back(&pins[i]);
             }
         }
         BasicGate(unsigned short input_pins, unsigned short output_pins, unsigned short bidirectional_pins) {
             for (int i = 0; i < input_pins; i++) {
                 pins.push_back(Pin(this, i + 1, PinMark::INPUT));
+                this->input_pins.push_back(&pins[i]);
             }
             for (int i = 0; i < output_pins; i++) {
                 pins.push_back(Pin(this, i + output_pins + 1, PinMark::OUTPUT));
+                this->output_pins.push_back(&pins[i]);
             }
             for (int i = 0; i < bidirectional_pins; i++) {
                 pins.push_back(Pin(this, i + output_pins + input_pins + 1, PinMark::BIDIRECTIONAL));
+                this->output_pins.push_back(&pins[i]);
+                this->input_pins.push_back(&pins[i]);
             }
         }
 
     };
     class ConfigurableBasicGate : public BasicGate {
+    protected:
+        unsigned short assert_config_bits() {
+            auto a = config_table.find("Bits");
+            if (a == config_table.end()) 
+                throw LogicSim::LogicSimException("Missing 'Bits' in config table", this);
+            return a->second.get()->get_t<unsigned short>();
+        }
+        void assert_pin(unsigned short pin_n, unsigned short bits);
+        void assert_all_pins() {
+            auto bits = config_table.find("Bits")->second.get()->get_t<unsigned short>();
+
+        }
     public:
         const bool is_configurable = true;
         ConfigTable config_table;
