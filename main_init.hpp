@@ -89,10 +89,12 @@ namespace LogicSim {
         };
         class UnexpectedWireValueTypeError : public LogicSimException {
         public:
-            InvalidWireValueTypeError(LogicSimObject* obj, WireStateValueType expected, WireStateValueType actual) :
+            UnexpectedWireValueTypeError(LogicSimObject* obj, WireStateValueType expected, WireStateValueType actual) :
                 LogicSimException("Invalid WireValueType: " + wirestatetype_to_str(expected)
                 + " expected, but got " + wirestatetype_to_str(actual) + " at "
                 + obj->getObjectType() + ":" + to_string(obj)) {};    
+        };
+        
     };
 
     inline void memcpy(void* src, void* pst, size_t n) {
@@ -104,15 +106,30 @@ namespace LogicSim {
     }
 
     class ConfigEntry : public LogicSimObject {
-    private:
         unique_ptr<void> ptr;
         const char* type = "<null>";
     public:
+        virtual string toString() {
+            return "<unknown>";
+        }
         template<typename T>
         ConfigEntry(T obj, string type) {
             T* new_obj = malloc(sizeof(T));
             memcpy(&obj,new_obj,sizeof(T));
             ptr.reset(new_obj);
+        }
+        template<typename T>
+        T& get() {
+            return *(T*)ptr.get();
+        }
+        template<typename T>
+        void set(T obj) {
+            T* new_obj = malloc(sizeof(T));
+            memcpy(new_obj,&obj,sizeof(T));
+            ptr.reset(new_obj);
+        }
+        void set<nullptr_t>(nullptr_t) {
+            ptr.reset(nullptr);
         }
         ConfigEntry(nullptr_t) {
             ptr.reset(nullptr);
@@ -141,12 +158,12 @@ namespace LogicSim {
             return "Table";
         }
         Table() = default;
-        V& operator[](const K& key) {
+        unique_ptr<V>& operator[](const K& key) {
             auto v = entries.find(key);
             if (v == entries.end()) {
                 throw Exceptions::InvalidKeyError(this, key);
             }
-            return *v;
+            return v;
         }
         auto begin() {
             return entries.begin();
@@ -187,7 +204,7 @@ namespace LogicSim {
             unsigned char byte;
             bool b;
         };
-        WireStateValueType type = NONE;
+        WireStateValueType type = WireStateValueType::NONE;
         WireStateValue() : resistance(-1) {};
         WireStateValue(std::nullptr_t) : resistance(-1) {};
         WireStateValue(unsigned char byte) : byte(byte), type(WireStateValueType::BYTE) {};
@@ -424,8 +441,8 @@ namespace LogicSim {
             return root;
         }
         void setWire(Wire* wire);
-        void write(WireStateValue value);
-        WireStateValue read();
+        void write(int in,WireStateValue value);
+        vector<WireState> read();
         
     };
     
@@ -445,7 +462,7 @@ namespace LogicSim {
         virtual void update() = 0;
         friend class MainSim;
     public:
-        const bool is_configurable = false;
+        virtual bool isConfigurable() {return false;}
         virtual const char* getObjectType() {
             return "BasicGate";
         }
@@ -483,6 +500,9 @@ namespace LogicSim {
         virtual const char* getObjectType() {
             return "ConfigurableBasicGate";
         }
+        virtual bool isConfigurable() {
+            return true;
+        }
         ConfigurableBasicGate() = default;
         ConfigurableBasicGate(unsigned short num_pins) : BasicGate(num_pins) {};
         ConfigurableBasicGate(unsigned short input_pins, unsigned short output_pins) : BasicGate(input_pins, output_pins) {};
@@ -490,7 +510,7 @@ namespace LogicSim {
     };
     
     class Wire final : public LogicSimObject {
-        WireState state;
+        vector<WireState> state;
         friend class Pin;
         friend void connect(Pin*,Wire*);
         friend void disconnect(Pin*,Wire*);
@@ -505,9 +525,14 @@ namespace LogicSim {
                 pin->setWire(nullptr);
             }
         };
-        WireStateValue getState() {
-            return state.getState();
+        WireStateValue getState(unsigned short index) {
+            if (state.size() > 0) return state[index % state.size()].getState();
+            return WireStateValue();
         }
+        vector<WireState> getState() {
+            return state;
+        }
+
         void mark_for_update() {
             for (auto pin : pins) {
                 if (pin->getMark() != PinMark::OUTPUT) pin->getRoot()->markForUpdate();
